@@ -1,0 +1,23 @@
+##
+# \file .gitignore
+# \author Isaiah Lateer
+# 
+# Used for version control exclusion.
+#
+
+# File exclusions
+*.dll
+*.exe
+*.exp
+*.ilk
+*.lib
+*.obj
+*.pdb
+*.res
+*.so
+
+# Folder exclusions
+bin/
+include/
+lib/
+obj/

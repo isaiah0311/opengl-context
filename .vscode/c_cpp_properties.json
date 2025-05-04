@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/include/**"
+            ],
+            "defines": [
+                "NDEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "intelliSenseMode": "windows-msvc-x64",
+            "cStandard": "c17"
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/include/**"
+            ],
+            "defines": [
+                "NDEBUG"
+            ],
+            "intelliSenseMode": "linux-gcc-x64",
+            "cStandard": "c17"
+        }
+    ],
+    "version": 4,
+    "enableConfigurationSquiggles": true
+}

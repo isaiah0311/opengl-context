@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Build",
+            "windows": {
+                "command": "${workspaceFolder}/build.bat"
+            },
+            "linux": {
+                "command": "${workspaceFolder}/build.sh"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Clean",
+            "windows": {
+                "command": "${workspaceFolder}/clean.bat"
+            },
+            "linux": {
+                "command": "${workspaceFolder}/clean.sh"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build"
+        }
+    ]
+}
