@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include "window.h"
 
 /**
  * Entry point for the program.
@@ -16,13 +16,13 @@
  * \return Exit code.
  */
 int main() {
-    printf("OpenGL"
-#ifdef OPENGL_CONTEXT_WINDOWS_PLATFORM     
-    " (Windows)"
-#elif defined OPENGL_CONTEXT_LINUX_PLATFORM
-    " (Linux)"
-#endif
-    "\n");
+    window* window = create_window();
+    if (!window) {
+        return EXIT_FAILURE;
+    }
+
+    poll_events(window);
+    destroy_window(window);
 
     return EXIT_SUCCESS;
 }
