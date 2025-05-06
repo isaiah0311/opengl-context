@@ -31,8 +31,9 @@ void destroy_window(window* window);
 /**
  * Polls events sent to all windows.
  * 
- * \param[in] window Any window.
+ * \param[in] window Window.
+ * \return Whether the application should close.
  */
-void poll_events(window* window);
+bool poll_events(window* window);
 
 #endif

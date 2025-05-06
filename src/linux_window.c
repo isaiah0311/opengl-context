@@ -125,15 +125,30 @@ void destroy_window(window* window) {
 /**
  * Polls events sent to all windows.
  * 
- * \param[in] window Any window.
+ * \param[in] window Window.
+ * \return Whether the application should close.
  */
-void poll_events(window* window) {
+bool poll_events(window* window) {
+    bool quit = false;
     window_data* data = window->data;
 
     while (XPending(data->display)) {
         XEvent event = {};
         XNextEvent(data->display, &event);
+
+        switch (event.type) {
+        case ClientMessage: {
+            if (event.xclient.data.l[0] == data->wm_delete_window) {
+                quit = true;
+            }
+
+            break;
+        } default:
+            break;
+        }
     }
+
+    return quit;
 }
 
 #else

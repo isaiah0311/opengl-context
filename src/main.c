@@ -21,7 +21,11 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    poll_events(window);
+    bool quit = false;
+    while (!quit) {
+        quit = poll_events(window);
+    }
+    
     destroy_window(window);
 
     return EXIT_SUCCESS;

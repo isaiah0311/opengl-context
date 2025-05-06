@@ -24,6 +24,10 @@
     ],
     "files.associations": {
         "xutility": "c",
-        "algorithm": "c"
+        "algorithm": "c",
+        "*.rh": "cpp",
+        "xlocale": "c",
+        "vector": "c",
+        "xstring": "c"
     }
 }

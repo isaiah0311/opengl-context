@@ -17,6 +17,8 @@
 
 #include <windows.h>
 
+static bool quit = false;
+
 /**
  * Handles messages sent to the window.
  * 
@@ -28,7 +30,18 @@
  */
 LRESULT CALLBACK window_procedure(HWND window, UINT message, WPARAM wparam,
     LPARAM lparam) {
-    return DefWindowProc(window, message, wparam, lparam);
+    LRESULT result = 0;
+
+    switch (message) {
+    case WM_CLOSE:
+        quit = true;
+        break;
+    default:
+        result = DefWindowProc(window, message, wparam, lparam);
+        break;
+    }
+    
+    return result;
 }
 
 typedef struct window_data {
@@ -119,9 +132,10 @@ void destroy_window(window* window) {
 /**
  * Polls events sent to all windows.
  * 
- * \param[in] window Any window.
+ * \param[in] window Window.
+ * \return Whether the application should close.
  */
-void poll_events(window* window) {
+bool poll_events(window* window) {
     window;
 
     MSG message;
@@ -129,6 +143,8 @@ void poll_events(window* window) {
         TranslateMessage(&message);
         DispatchMessage(&message);
     }
+
+    return quit;
 }
 
 #else
