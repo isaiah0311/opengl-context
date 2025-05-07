@@ -29,7 +29,7 @@ window* create_window();
 void destroy_window(window* window);
 
 /**
- * Polls events sent to all windows.
+ * Polls events sent to the window.
  * 
  * \param[in] window Window.
  * \return Whether the application should close.

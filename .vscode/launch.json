@@ -5,7 +5,7 @@
             "name": "Launch (Windows)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/opengl.exe",
+            "program": "${workspaceFolder}/bin/opengl_context.exe",
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -15,7 +15,7 @@
             "name": "Launch (Linux)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/opengl.exe",
+            "program": "${workspaceFolder}/bin/opengl_context.exe",
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": []

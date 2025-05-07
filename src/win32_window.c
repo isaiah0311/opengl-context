@@ -2,7 +2,7 @@
  * \file win32_window.c
  * \author Isaiah Lateer
  * 
- * Source file for the window struct and functions.
+ * Source file for the window functions.
  */
 
 #include "platform.h"
@@ -130,16 +130,16 @@ void destroy_window(window* window) {
 }
 
 /**
- * Polls events sent to all windows.
+ * Polls events sent to the window.
  * 
  * \param[in] window Window.
  * \return Whether the application should close.
  */
 bool poll_events(window* window) {
-    window;
+    window_data* data = window->data;
 
-    MSG message;
-    while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
+    MSG message = { NULL };
+    while (PeekMessage(&message, data->window, 0, 0, PM_REMOVE)) {
         TranslateMessage(&message);
         DispatchMessage(&message);
     }

@@ -1,8 +1,8 @@
 /**
- * \file win32_window.c
+ * \file linux_window.c
  * \author Isaiah Lateer
  * 
- * Source file for the window struct and functions.
+ * Source file for the window functions.
  */
 
 #include "platform.h"
@@ -15,6 +15,10 @@
 #include <stdio.h>
 
 #include <X11/Xlib.h>
+
+static int predicate(Display* display, XEvent* event, XPointer arg) {
+    return event->xany.window == *(Window*) arg;
+}
 
 typedef struct window_data {
     Display* display;
@@ -123,7 +127,7 @@ void destroy_window(window* window) {
 }
 
 /**
- * Polls events sent to all windows.
+ * Polls events sent to the window.
  * 
  * \param[in] window Window.
  * \return Whether the application should close.
@@ -132,10 +136,9 @@ bool poll_events(window* window) {
     bool quit = false;
     window_data* data = window->data;
 
-    while (XPending(data->display)) {
-        XEvent event = {};
-        XNextEvent(data->display, &event);
-
+    XEvent event = {};
+    while (XCheckIfEvent(data->display, &event, predicate,
+        (XPointer) &data->window)) {
         switch (event.type) {
         case ClientMessage: {
             if (event.xclient.data.l[0] == data->wm_delete_window) {

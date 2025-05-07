@@ -52,7 +52,7 @@ set source_files=!source_files:~1!
 
 set cflags=/nologo /c /EHsc /fp:precise /sdl /GS /W4 /WX /MD /DNDEBUG ^
     /D_UNICODE /DUNICODE /Isrc /Iinclude /Foobj\
-set lflags=/nologo user32.lib gdi32.lib /out:bin\opengl.exe
+set lflags=/nologo user32.lib gdi32.lib /out:bin\opengl_context.exe
 
 call %devcmd% x64
 
