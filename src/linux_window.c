@@ -16,13 +16,18 @@
 
 #include <X11/Xlib.h>
 
+#include <GL/glx.h>
+
 static int predicate(Display* display, XEvent* event, XPointer arg) {
     return event->xany.window == *(Window*) arg;
 }
 
 typedef struct window_data {
     Display* display;
+    XVisualInfo* visual_info;
+    Colormap colormap;
     Window window;
+    GLXContext context;
     Atom wm_delete_window;
 } window_data;
 
@@ -39,13 +44,40 @@ window* create_window() {
     data->display = XOpenDisplay(NULL);
     if (!data->display) {
         fprintf(stderr, "[ERROR] Failed to open display.\n");
-        return false;
+
+        free(data);
+        free(window);
+
+        return NULL;
     }
 
     const int screen = DefaultScreen(data->display);
     const Window parent = RootWindow(data->display, screen);
-    const int depth = DefaultDepth(data->display, screen);
-    Visual* visual = DefaultVisual(data->display, screen);
+
+    int visual_attributes[] = {
+        GLX_RGBA,
+        GLX_RED_SIZE, 8,
+        GLX_GREEN_SIZE, 8,
+        GLX_BLUE_SIZE, 8,
+        GLX_ALPHA_SIZE, 8,
+        None
+    };
+
+    data->visual_info = glXChooseVisual(data->display, screen,
+        visual_attributes);
+    if (!data->visual_info) {
+        fprintf(stderr, "[ERROR] Failed to get visual information.\n");
+
+        XCloseDisplay(data->display);
+
+        free(data);
+        free(window);
+
+        return NULL;
+    }
+
+    data->colormap = XCreateColormap(data->display, parent,
+        data->visual_info->visual, AllocNone);
 
     XSetWindowAttributes window_attributes = {
         0,
@@ -61,32 +93,27 @@ window* create_window() {
         0,
         0,
         0,
-        0,
+        data->colormap,
         0
     };
 
     data->window = XCreateWindow(data->display, parent, 20, 20, 400, 300, 0,
-        depth, InputOutput, visual, CWBackPixel, &window_attributes);
+        data->visual_info->depth, InputOutput, data->visual_info->visual,
+        CWBackPixel | CWColormap, &window_attributes);
 
-    int result = XMapWindow(data->display, data->window);
-    if (!result) {
-        fprintf(stderr, "[ERROR] Failed to map window.\n");
-
-        XDestroyWindow(data->display, data->window);
-        XCloseDisplay(data->display);
-
-        return false;
-    }
-
-    result = XStoreName(data->display, data->window, "OpenGL Context");
+    Bool result = XStoreName(data->display, data->window, "OpenGL Context");
     if (!result) {
         fprintf(stderr, "[ERROR] Failed to name window.\n");
 
-        XUnmapWindow(data->display, data->window);
         XDestroyWindow(data->display, data->window);
+        XFreeColormap(data->display, data->colormap);
+        XFree(data->visual_info);
         XCloseDisplay(data->display);
 
-        return false;
+        free(data);
+        free(window);
+
+        return NULL;
     }
 
     data->wm_delete_window = XInternAtom(data->display, "WM_DELETE_WINDOW", 0);
@@ -96,11 +123,64 @@ window* create_window() {
     if (!result) {
         fprintf(stderr, "[ERROR] Failed to set WM protocol.\n");
 
-        XUnmapWindow(data->display, data->window);
         XDestroyWindow(data->display, data->window);
+        XFreeColormap(data->display, data->colormap);
+        XFree(data->visual_info);
         XCloseDisplay(data->display);
 
-        return false;
+        free(data);
+        free(window);
+
+        return NULL;
+    }
+
+    result = XMapWindow(data->display, data->window);
+    if (!result) {
+        fprintf(stderr, "[ERROR] Failed to map window.\n");
+
+        XDestroyWindow(data->display, data->window);
+        XFreeColormap(data->display, data->colormap);
+        XFree(data->visual_info);
+        XCloseDisplay(data->display);
+
+        free(data);
+        free(window);
+
+        return NULL;
+    }
+
+    data->context = glXCreateContext(data->display, data->visual_info, NULL,
+        True);
+    if (!data->context) {
+        fprintf(stderr, "[ERROR] Failed to create context.\n");
+
+        XUnmapWindow(data->display, data->window);
+        XDestroyWindow(data->display, data->window);
+        XFreeColormap(data->display, data->colormap);
+        XFree(data->visual_info);
+        XCloseDisplay(data->display);
+
+        free(data);
+        free(window);
+
+        return NULL;
+    }
+
+    result = glXMakeCurrent(data->display, data->window, data->context);
+    if (!result) {
+        fprintf(stderr, "[ERROR] Failed to set context.\n");
+
+        glXDestroyContext(data->display, data->context);
+        XUnmapWindow(data->display, data->window);
+        XDestroyWindow(data->display, data->window);
+        XFreeColormap(data->display, data->colormap);
+        XFree(data->visual_info);
+        XCloseDisplay(data->display);
+
+        free(data);
+        free(window);
+
+        return NULL;
     }
 
     printf("[INFO] Window created.\n");
@@ -116,11 +196,15 @@ window* create_window() {
 void destroy_window(window* window) {
     window_data* data = window->data;
 
+    glXMakeCurrent(data->display, None, NULL);
+    glXDestroyContext(data->display, data->context);
     XUnmapWindow(data->display, data->window);
     XDestroyWindow(data->display, data->window);
+    XFreeColormap(data->display, data->colormap);
+    XFree(data->visual_info);
     XCloseDisplay(data->display);
 
-    free(window->data);
+    free(data);
     free(window);
 
     printf("[INFO] Window destroyed.\n");
@@ -136,7 +220,7 @@ bool poll_events(window* window) {
     bool quit = false;
     window_data* data = window->data;
 
-    XEvent event = {};
+    XEvent event = { 0 };
     while (XCheckIfEvent(data->display, &event, predicate,
         (XPointer) &data->window)) {
         switch (event.type) {
@@ -152,6 +236,16 @@ bool poll_events(window* window) {
     }
 
     return quit;
+}
+
+/**
+ * Swaps buffers.
+ * 
+ * \param[in] window Window.
+ */
+void swap_buffer(window* window) {
+    window_data* data = window->data;
+    glXSwapBuffers(data->display, data->window);
 }
 
 #else

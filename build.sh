@@ -17,7 +17,7 @@ mkdir -p bin
 source_files=$(find . -type f -name "*.c")
 
 cflags="-c -Wall -Werror -DNDEBUG -Isrc -Iinclude"
-lflags="-lX11 -o bin/opengl_context.exe"
+lflags="-lX11 -lGL -o bin/opengl_context.exe"
 
 for source_file in $source_files; do
     object_file="obj/$(basename "${source_file%.c}.obj")"

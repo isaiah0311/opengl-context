@@ -36,4 +36,11 @@ void destroy_window(window* window);
  */
 bool poll_events(window* window);
 
+/**
+ * Swaps buffers.
+ * 
+ * \param[in] window Window.
+ */
+void swap_buffer(window* window);
+
 #endif

@@ -24,6 +24,7 @@ int main() {
     bool quit = false;
     while (!quit) {
         quit = poll_events(window);
+        swap_buffer(window);
     }
     
     destroy_window(window);
