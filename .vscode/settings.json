@@ -28,6 +28,10 @@
         "*.rh": "cpp",
         "xlocale": "c",
         "vector": "c",
-        "xstring": "c"
+        "xstring": "c",
+        "format": "c",
+        "utility": "c",
+        "xlocmes": "c",
+        "xiosbase": "c"
     }
 }

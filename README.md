@@ -2,6 +2,21 @@
 
 Demonstrates how to create an OpenGL context using the Win32 API and X11 API.
 
+## Dependencies
+
+This project requires several OpenGL API and extension headers. The basic API
+headers gl.h, wgl.h, and glx.h should be supplied by the OS or graphics drivers.
+Extension headers can be found in the Khronos OpenGL Registry. Extension headers
+will be in an include subfolder of the project directory. Inside the include
+folder should be two subfolders, GL and KHR. The headers glext.h, wglext.h, and
+glxext.h should be placed in GL. The header khrplatform.h should be placed in
+KHR.
+
+These files are not included in the repository, as they are not owned or
+managed by me.
+
+Khronos OpenGL Registry: https://registry.khronos.org/OpenGL/index_gl.php
+
 ## Building
 
 Pressing ctrl + shift + b while in VSCode will pull up the build tasks. From
