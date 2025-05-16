@@ -18,11 +18,10 @@
 #include <windows.h>
 
 #include <GL/gl.h>
-#include <GL/wglext.h>
+
+#include "GL/wglext.h"
 
 #include "version.h"
-
-static bool quit = false;
 
 /**
  * Handles messages sent to the window.
@@ -37,9 +36,12 @@ static LRESULT CALLBACK window_procedure(HWND window, UINT message,
     WPARAM wparam, LPARAM lparam) {
     LRESULT result = 0;
 
+    LONG_PTR user_data = GetWindowLongPtr(window, GWLP_USERDATA);
+    bool* quit = (bool*) user_data;
+
     switch (message) {
     case WM_CLOSE:
-        quit = true;
+        *quit = true;
         break;
     default:
         result = DefWindowProc(window, message, wparam, lparam);
@@ -70,6 +72,7 @@ typedef struct window_data {
     HWND window;
     HDC device_context;
     HGLRC rendering_context;
+    bool quit;
 } window_data;
 
 /**
@@ -553,6 +556,11 @@ window* create_window() {
         }
     }
 
+    data->quit = false;
+
+    LONG_PTR user_data = (LONG_PTR) &data->quit;
+    SetWindowLongPtr(data->window, GWLP_USERDATA, user_data);
+
     ShowWindow(data->window, SW_SHOW);
 
     printf("[INFO] Window created.\n");
@@ -595,7 +603,7 @@ bool poll_events(window* window) {
         DispatchMessage(&message);
     }
 
-    return quit;
+    return data->quit;
 }
 
 /**
