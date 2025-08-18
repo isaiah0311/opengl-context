@@ -2,6 +2,14 @@
 
 Demonstrates how to create an OpenGL context using the Win32 API and X11 API.
 
+## Structure
+
+.vscode - Settings and configuration files used by VSCode\
+bin - Executables\
+include - Third party headers\
+obj - Intermediate directory\
+src - Source files\
+
 ## Dependencies
 
 This project requires several OpenGL API and extension headers. The basic API
@@ -13,7 +21,7 @@ glxext.h should be placed in GL. The header khrplatform.h should be placed in
 KHR.
 
 These files are not included in the repository, as they are not owned or
-managed by me.
+managed by us.
 
 Khronos OpenGL Registry: https://registry.khronos.org/OpenGL/index_gl.php
 

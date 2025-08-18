@@ -8,7 +8,7 @@
                 "command": "${workspaceFolder}/build.bat"
             },
             "linux": {
-                "command": "${workspaceFolder}/build.sh"
+                "command": "make -f ${workspaceFolder}/Makefile"
             },
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -22,7 +22,7 @@
                 "command": "${workspaceFolder}/clean.bat"
             },
             "linux": {
-                "command": "${workspaceFolder}/clean.sh"
+                "command": "make -f ${workspaceFolder}/Makefile clean"
             },
             "options": {
                 "cwd": "${workspaceFolder}"

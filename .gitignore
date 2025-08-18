@@ -8,8 +8,6 @@
 # File exclusions
 *.dll
 *.exe
-*.exp
-*.ilk
 *.lib
 *.obj
 *.pdb

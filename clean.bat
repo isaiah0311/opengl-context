@@ -7,9 +7,5 @@
 
 @echo off
 
-pushd "%~dp0"
-
 rmdir /s /q obj
 rmdir /s /q bin
-
-popd
