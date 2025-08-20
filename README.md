@@ -31,7 +31,7 @@ Pressing ctrl + shift + b while in VSCode will pull up the build tasks. From
 here there are two options, build and clean. Build will compile the code and
 place the executable in the bin folder. Clean will remove the bin and obj
 directories. In order to build, you must have MSVC installed if you are on
-Windows and g++ installed if you are on Linux.
+Windows and GCC installed if you are on Linux.
 
 ## Running
 
