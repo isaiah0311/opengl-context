@@ -8,7 +8,7 @@ Demonstrates how to create an OpenGL context using the Win32 API and X11 API.
 bin - Executables\
 include - Third party headers\
 obj - Intermediate directory\
-src - Source files\
+src - Source files
 
 ## Dependencies
 
