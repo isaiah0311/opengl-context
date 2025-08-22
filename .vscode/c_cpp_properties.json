@@ -9,7 +9,8 @@
             "defines": [
                 "NDEBUG",
                 "UNICODE",
-                "_UNICODE"
+                "_UNICODE",
+                "_CRT_SECURE_NO_WARNINGS"
             ],
             "intelliSenseMode": "windows-msvc-x64",
             "cStandard": "c11"

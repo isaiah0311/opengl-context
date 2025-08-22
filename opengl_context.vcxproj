@@ -39,7 +39,7 @@
             <LanguageStandard_C>stdc11</LanguageStandard_C>
             <Optimization>MaxSpeed</Optimization>
             <PrecompiledHeader>NotUsing</PrecompiledHeader>
-            <PreprocessorDefinitions>UNICODE;_UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <SDLCheck>true</SDLCheck>
             <TreatWarningAsError>true</TreatWarningAsError>
             <WarningLevel>Level4</WarningLevel>

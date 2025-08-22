@@ -16,7 +16,7 @@
  * \return Exit code.
  */
 int main() {
-    window* window = create_window();
+    window* window = create_window("OpenGL Context", 400, 300);
     if (!window) {
         return EXIT_FAILURE;
     }

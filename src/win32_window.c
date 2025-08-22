@@ -9,24 +9,32 @@
 
 #ifdef OPENGL_CONTEXT_WINDOWS_PLATFORM
 
-#define CLASS_NAME TEXT("window_class")
-
 #include "window.h"
 
 #include <stdio.h>
 
 #include <windows.h>
 
-#include <GL/gl.h>
-
-#include "GL/wglext.h"
+#include <gl/GL.h>
+#include <GL/glext.h>
+#include <GL/wglext.h>
 
 #include "version.h"
+
+#define CLASS_NAME TEXT("window_class")
+
+typedef struct window {
+    HINSTANCE instance;
+    HWND window;
+    HDC device_context;
+    HGLRC rendering_context;
+    bool quit;
+} window;
 
 /**
  * Handles messages sent to the window.
  * 
- * \param[in] window Native window handle.
+ * \param[in] window Window.
  * \param[in] message Message.
  * \param[in] wparam Additional message information.
  * \param[in] lparam Additional message information.
@@ -67,23 +75,34 @@ static PROC get_procedure(const char* name) {
     return procedure;
 }
 
-typedef struct window_data {
-    HINSTANCE instance;
-    HWND window;
-    HDC device_context;
-    HGLRC rendering_context;
-    bool quit;
-} window_data;
-
 /**
  * Creates a window.
  * 
+ * \param[in] title Window title.
+ * \param[in] width Window width.
+ * \param[in] height Window height.
  * \return New window.
  */
-window* create_window() {
+window* create_window(const char* title, unsigned width, unsigned height) {
+#if defined(UNICODE) || defined(_UNICODE)
+    const size_t dummy_char_count = strlen(title) + 1;
+    wchar_t* dummy_wtitle = malloc(dummy_char_count * sizeof(wchar_t));
+    mbstowcs(dummy_wtitle, title, dummy_char_count);
+#endif
+
     HWND dummy_window = CreateWindowEx(0, TEXT("STATIC"),
-        TEXT("OpenGL Context"), 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-        CW_USEDEFAULT, NULL, NULL, NULL, NULL);
+#if defined(UNICODE) || defined(_UNICODE)
+        dummy_wtitle,
+#else
+        dummy_title,
+#endif
+        0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL,
+        NULL, NULL, NULL);
+
+#if defined(UNICODE) || defined(_UNICODE)
+    free(dummy_wtitle);
+#endif
+
     if (!dummy_window) {
         fprintf(stderr, "[ERROR] Failed to create dummy window.\n");
         return NULL;
@@ -99,7 +118,7 @@ window* create_window() {
     }
 
     PIXELFORMATDESCRIPTOR dummy_descriptor = {
-        sizeof(dummy_descriptor),
+        sizeof(PIXELFORMATDESCRIPTOR),
         1,
         PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
         PFD_TYPE_RGBA,
@@ -139,7 +158,7 @@ window* create_window() {
     }
 
     int result = DescribePixelFormat(dummy_device_context, dummy_format,
-        sizeof(dummy_descriptor), &dummy_descriptor);
+        sizeof(PIXELFORMATDESCRIPTOR), &dummy_descriptor);
     if (!result) {
         fprintf(stderr, "[ERROR] Failed to describe dummy pixel format.\n");
 
@@ -190,36 +209,37 @@ window* create_window() {
         get_procedure("wglCreateContextAttribsARB");
 
     window* window = malloc(sizeof(struct window));
-    window_data* data = malloc(sizeof(window_data));
-    window->data = data;
+    memset(window, 0, sizeof(struct window));
 
-    data->instance = GetModuleHandle(NULL);
-    if (!data->instance) {
+    window->instance = GetModuleHandle(NULL);
+    if (!window->instance) {
         fprintf(stderr, "[ERROR] Failed to get module handle.\n");
 
         wglMakeCurrent(NULL, NULL);
         wglDeleteContext(dummy_rendering_context);
         ReleaseDC(dummy_window, dummy_device_context);
         DestroyWindow(dummy_window);
+
+        free(window);
         
         return NULL;
     }
 
     WNDCLASSEX window_class = { 0 };
-    result = GetClassInfoEx(data->instance, CLASS_NAME, &window_class);
+    result = GetClassInfoEx(window->instance, CLASS_NAME, &window_class);
     if (!result) {
-        HICON icon = LoadIcon(data->instance, IDI_APPLICATION);
-
-        window_class = (WNDCLASSEX) { 0 };
-        window_class.cbSize = sizeof(window_class);
+        window_class.cbSize = sizeof(WNDCLASSEX);
         window_class.style = CS_VREDRAW | CS_HREDRAW | CS_OWNDC;
         window_class.lpfnWndProc = window_procedure;
-        window_class.hInstance = data->instance;
-        window_class.hIcon = icon;
+        window_class.cbClsExtra = 0;
+        window_class.cbWndExtra = 0;
+        window_class.hInstance = window->instance;
+        window_class.hIcon = LoadIcon(window->instance, IDI_APPLICATION);
         window_class.hCursor = LoadCursor(NULL, IDC_ARROW);
         window_class.hbrBackground = GetStockObject(BLACK_BRUSH);
+        window_class.lpszMenuName = NULL;
         window_class.lpszClassName = CLASS_NAME;
-        window_class.hIconSm = icon;
+        window_class.hIconSm = LoadIcon(window->instance, IDI_APPLICATION);
 
         ATOM atom = RegisterClassEx(&window_class);
         if (!atom) {
@@ -230,45 +250,58 @@ window* create_window() {
             ReleaseDC(dummy_window, dummy_device_context);
             DestroyWindow(dummy_window);
 
-            free(data);
             free(window);
 
             return NULL;
         }
     }
 
-    data->window = CreateWindowEx(0, CLASS_NAME, TEXT("OpenGL Context"),
-        WS_OVERLAPPEDWINDOW, 20, 20, 400, 300, NULL, NULL, data->instance,
-        NULL);
-    if (!data->window) {
+#if defined(UNICODE) || defined(_UNICODE)
+    const size_t char_count = strlen(title) + 1;
+    wchar_t* wtitle = malloc(char_count * sizeof(wchar_t));
+    mbstowcs(wtitle, title, char_count);
+#endif
+
+    window->window = CreateWindowEx(0, CLASS_NAME,
+#if defined(UNICODE) || defined(_UNICODE)
+        wtitle,
+#else
+        title,
+#endif
+        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL,
+        NULL, window->instance, NULL);
+
+#if defined(UNICODE) || defined(_UNICODE)
+    free(wtitle);
+#endif
+
+    if (!window->window) {
         fprintf(stderr, "[ERROR] Failed to create window.\n");
 
-        UnregisterClass(CLASS_NAME, data->instance);
+        UnregisterClass(CLASS_NAME, window->instance);
 
         wglMakeCurrent(NULL, NULL);
         wglDeleteContext(dummy_rendering_context);
         ReleaseDC(dummy_window, dummy_device_context);
         DestroyWindow(dummy_window);
 
-        free(data);
         free(window);
 
         return NULL;
     }
 
-    data->device_context = GetDC(data->window);
-    if (!data->device_context) {
+    window->device_context = GetDC(window->window);
+    if (!window->device_context) {
         fprintf(stderr, "[ERROR] Failed to get device context.\n");
 
-        DestroyWindow(data->window);
-        UnregisterClass(CLASS_NAME, data->instance);
+        DestroyWindow(window->window);
+        UnregisterClass(CLASS_NAME, window->instance);
 
         wglMakeCurrent(NULL, NULL);
         wglDeleteContext(dummy_rendering_context);
         ReleaseDC(dummy_window, dummy_device_context);
         DestroyWindow(dummy_window);
 
-        free(data);
         free(window);
 
         return NULL;
@@ -281,7 +314,7 @@ window* create_window() {
         DestroyWindow(dummy_window);
 
         PIXELFORMATDESCRIPTOR descriptor = {
-            sizeof(descriptor),
+            sizeof(PIXELFORMATDESCRIPTOR),
             1,
             PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
             PFD_TYPE_RGBA,
@@ -309,73 +342,69 @@ window* create_window() {
             0
         };
 
-        int format = ChoosePixelFormat(data->device_context, &descriptor);
+        int format = ChoosePixelFormat(window->device_context, &descriptor);
         if (!format) {
             fprintf(stderr, "[ERROR] Failed to choose pixel format.\n");
 
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
 
-            free(data);
             free(window);
 
             return NULL;
         }
 
-        result = DescribePixelFormat(data->device_context, format,
-            sizeof(descriptor), &descriptor);
+        result = DescribePixelFormat(window->device_context, format,
+            sizeof(PIXELFORMATDESCRIPTOR), &descriptor);
         if (!result) {
             fprintf(stderr, "[ERROR] Failed to describe pixel format.\n");
 
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
 
-            free(data);
             free(window);
 
             return NULL;
         }
 
-        result = SetPixelFormat(data->device_context, format, &descriptor);
+        result = SetPixelFormat(window->device_context, format, &descriptor);
         if (!result) {
             fprintf(stderr, "[ERROR] Failed to set pixel format.\n");
 
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
 
-            free(data);
             free(window);
 
             return NULL;
         }
 
-        data->rendering_context = wglCreateContext(data->device_context);
-        if (!data->rendering_context) {
+        window->rendering_context = wglCreateContext(window->device_context);
+        if (!window->rendering_context) {
             fprintf(stderr, "[ERROR] Failed to create rendering context.\n");
 
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
 
-            free(data);
             free(window);
 
             return NULL;
         }
 
-        result = wglMakeCurrent(data->device_context, data->rendering_context);
+        result = wglMakeCurrent(window->device_context,
+            window->rendering_context);
         if (!result) {
             fprintf(stderr, "[ERROR] Failed to set rendering context.\n");
 
-            wglDeleteContext(data->rendering_context);
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            wglDeleteContext(window->rendering_context);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
 
-            free(data);
             free(window);
 
             return NULL;
@@ -394,28 +423,27 @@ window* create_window() {
         int format;
         UINT format_count;
     
-        result = wglChoosePixelFormatARB(data->device_context,
+        result = wglChoosePixelFormatARB(window->device_context,
             pixel_attributes, NULL, 1, &format, &format_count);
         if (!result || !format_count) {
             fprintf(stderr, "[ERROR] Failed to choose pixel format.\n");
             
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
 
             wglMakeCurrent(NULL, NULL);
             wglDeleteContext(dummy_rendering_context);
             ReleaseDC(dummy_window, dummy_device_context);
             DestroyWindow(dummy_window);
-    
-            free(data);
+
             free(window);
     
             return NULL;
         }
     
         PIXELFORMATDESCRIPTOR descriptor = {
-            sizeof(descriptor),
+            sizeof(PIXELFORMATDESCRIPTOR),
             0,
             0,
             0,
@@ -443,40 +471,38 @@ window* create_window() {
             0
         };
     
-        result = DescribePixelFormat(data->device_context, format,
-            sizeof(descriptor), &descriptor);
+        result = DescribePixelFormat(window->device_context, format,
+            sizeof(PIXELFORMATDESCRIPTOR), &descriptor);
         if (!result) {
             fprintf(stderr, "[ERROR] Failed to describe pixel format.\n");
     
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
 
             wglMakeCurrent(NULL, NULL);
             wglDeleteContext(dummy_rendering_context);
             ReleaseDC(dummy_window, dummy_device_context);
             DestroyWindow(dummy_window);
     
-            free(data);
             free(window);
     
             return NULL;
         }
     
-        result = SetPixelFormat(data->device_context, format, &descriptor);
+        result = SetPixelFormat(window->device_context, format, &descriptor);
         if (!result) {
             fprintf(stderr, "[ERROR] Failed to set pixel format.\n");
     
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
 
             wglMakeCurrent(NULL, NULL);
             wglDeleteContext(dummy_rendering_context);
             ReleaseDC(dummy_window, dummy_device_context);
             DestroyWindow(dummy_window);
     
-            free(data);
             free(window);
     
             return NULL;
@@ -514,10 +540,10 @@ window* create_window() {
                 0
             };
     
-            data->rendering_context =
-                wglCreateContextAttribsARB(data->device_context, NULL,
+            window->rendering_context =
+                wglCreateContextAttribsARB(window->device_context, NULL,
                 context_attributes);
-            if (data->rendering_context) {
+            if (window->rendering_context) {
                 break;
             }
         }
@@ -527,43 +553,41 @@ window* create_window() {
         ReleaseDC(dummy_window, dummy_device_context);
         DestroyWindow(dummy_window);
 
-        if (!data->rendering_context) {
+        if (!window->rendering_context) {
             fprintf(stderr, "[ERROR] Failed to create rendering context.\n");
             
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
     
-            free(data);
             free(window);
     
             return NULL;
         }
 
-        result = wglMakeCurrent(data->device_context, data->rendering_context);
+        result = wglMakeCurrent(window->device_context,
+            window->rendering_context);
         if (!result) {
             fprintf(stderr, "[ERROR] Failed to set rendering context.\n");
             
-            wglDeleteContext(data->rendering_context);
-            ReleaseDC(data->window, data->device_context);
-            DestroyWindow(data->window);
-            UnregisterClass(CLASS_NAME, data->instance);
+            wglDeleteContext(window->rendering_context);
+            ReleaseDC(window->window, window->device_context);
+            DestroyWindow(window->window);
+            UnregisterClass(CLASS_NAME, window->instance);
     
-            free(data);
             free(window);
     
             return NULL;
         }
     }
 
-    data->quit = false;
-
-    LONG_PTR user_data = (LONG_PTR) &data->quit;
-    SetWindowLongPtr(data->window, GWLP_USERDATA, user_data);
-
-    ShowWindow(data->window, SW_SHOW);
+    SetWindowLongPtr(window->window, GWLP_USERDATA, (LONG_PTR) &window->quit);
+    ShowWindow(window->window, SW_SHOW);
 
     printf("[INFO] Window created.\n");
+    printf("[INFO] OpenGL version: %s\n", glGetString(GL_VERSION));
+    printf("[INFO] OpenGL renderer: %s\n", glGetString(GL_RENDERER));
+    printf("[INFO] OpenGL vendor: %s\n", glGetString(GL_VENDOR));
 
     return window;
 }
@@ -571,18 +595,15 @@ window* create_window() {
 /**
  * Destroys a window.
  * 
- * \param[in] window Window data.
+ * \param[in] window Window.
  */
 void destroy_window(window* window) {
-    window_data* data = window->data;
-
     wglMakeCurrent(NULL, NULL);
-    wglDeleteContext(data->rendering_context);
-    ReleaseDC(data->window, data->device_context);
-    DestroyWindow(data->window);
-    UnregisterClass(CLASS_NAME, data->instance);
+    wglDeleteContext(window->rendering_context);
+    ReleaseDC(window->window, window->device_context);
+    DestroyWindow(window->window);
+    UnregisterClass(CLASS_NAME, window->instance);
 
-    free(data);
     free(window);
 
     printf("[INFO] Window destroyed.\n");
@@ -595,15 +616,13 @@ void destroy_window(window* window) {
  * \return Whether the application should close.
  */
 bool poll_events(window* window) {
-    window_data* data = window->data;
-
     MSG message = { 0 };
-    while (PeekMessage(&message, data->window, 0, 0, PM_REMOVE)) {
+    while (PeekMessage(&message, window->window, 0, 0, PM_REMOVE)) {
         TranslateMessage(&message);
         DispatchMessage(&message);
     }
 
-    return data->quit;
+    return window->quit;
 }
 
 /**
@@ -612,10 +631,7 @@ bool poll_events(window* window) {
  * \param[in] window Window.
  */
 void swap_buffer(window* window) {
-    window_data* data = window->data;
-    SwapBuffers(data->device_context);
+    SwapBuffers(window->device_context);
 }
 
-#else
-typedef int win32_window_c;
 #endif

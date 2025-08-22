@@ -10,21 +10,22 @@
 
 #include <stdbool.h>
 
-typedef struct window {
-    void* data;
-} window;
+typedef struct window window;
 
 /**
  * Creates a window.
  * 
+ * \param[in] title Window title.
+ * \param[in] width Window width.
+ * \param[in] height Window height.
  * \return New window.
  */
-window* create_window();
+window* create_window(const char* title, unsigned width, unsigned height);
 
 /**
  * Destroys a window.
  * 
- * \param[in] window Window data.
+ * \param[in] window Window.
  */
 void destroy_window(window* window);
 
