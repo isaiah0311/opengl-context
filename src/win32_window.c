@@ -425,7 +425,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
     
         result = wglChoosePixelFormatARB(window->device_context,
             pixel_attributes, NULL, 1, &format, &format_count);
-        if (!result || !format_count) {
+        if (!result || format_count == 0) {
             fprintf(stderr, "[ERROR] Failed to choose pixel format.\n");
             
             ReleaseDC(window->window, window->device_context);

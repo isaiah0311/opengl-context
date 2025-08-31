@@ -80,10 +80,14 @@ static int predicate(Display* display, XEvent* event, XPointer arg) {
 window* create_window(const char* title, unsigned width, unsigned height) {
     window* window = malloc(sizeof(struct window));
     memset(window, 0, sizeof(struct window));
+
+    XErrorHandler prev_error_handler = XSetErrorHandler(true_error_handler);
     
     window->display = XOpenDisplay(NULL);
-    if (!window->display) {
+    if (!window->display || error) {
         fprintf(stderr, "[ERROR] Failed to open display.\n");
+
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
@@ -93,15 +97,14 @@ window* create_window(const char* title, unsigned width, unsigned height) {
     int major_version, minor_version;
     Bool result = glXQueryVersion(window->display, &major_version,
         &minor_version);
-    if (!result) {
+    if (!result || error) {
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
         return NULL;
     }
-
-    XErrorHandler prev_error_handler = XSetErrorHandler(true_error_handler);
 
     const int screen = DefaultScreen(window->display);
     const Window parent = RootWindow(window->display, screen);
@@ -137,11 +140,12 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         int framebuffer_count;
         GLXFBConfig* framebuffers = glXChooseFBConfig(window->display, screen,
             framebuffer_attributes, &framebuffer_count);
-        if (!framebuffers || !framebuffer_count) {
+        if (!framebuffers || framebuffer_count == 0 || error) {
             fprintf(stderr,
                 "[ERROR] Failed to choose a framebuffer configuration.\n");
 
             XCloseDisplay(window->display);
+            XSetErrorHandler(prev_error_handler);
 
             free(window);
 
@@ -155,7 +159,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
             int sample_buffers;
             result = glXGetFBConfigAttrib(window->display, framebuffers[i],
                 GLX_SAMPLE_BUFFERS, &sample_buffers);
-            if (result != Success) {
+            if (result != Success || error) {
                 fprintf(stderr, "[ERROR] Failed to get framebuffer "
                     "configuration attribute.\n");
                 continue;
@@ -164,7 +168,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
             int samples;
             result = glXGetFBConfigAttrib(window->display, framebuffers[i],
                 GLX_SAMPLES, &samples);
-            if (result != Success) {
+            if (result != Success || error) {
                 fprintf(stderr, "[ERROR] Failed to get framebuffer "
                     "configuration attribute.\n");
                 continue;
@@ -187,6 +191,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         fprintf(stderr, "[ERROR] Failed to get visual information.\n");
 
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
@@ -223,6 +228,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         XFreeColormap(window->display, window->colormap);
         XFree(window->visual_info);
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
@@ -237,6 +243,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         XFreeColormap(window->display, window->colormap);
         XFree(window->visual_info);
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
@@ -252,6 +259,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         XFreeColormap(window->display, window->colormap);
         XFree(window->visual_info);
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
@@ -267,6 +275,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         XFreeColormap(window->display, window->colormap);
         XFree(window->visual_info);
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
@@ -281,6 +290,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         XFreeColormap(window->display, window->colormap);
         XFree(window->visual_info);
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
@@ -351,6 +361,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         XFreeColormap(window->display, window->colormap);
         XFree(window->visual_info);
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
@@ -367,6 +378,7 @@ window* create_window(const char* title, unsigned width, unsigned height) {
         XFreeColormap(window->display, window->colormap);
         XFree(window->visual_info);
         XCloseDisplay(window->display);
+        XSetErrorHandler(prev_error_handler);
 
         free(window);
 
